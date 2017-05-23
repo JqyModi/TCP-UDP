@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:orientation="horizontal"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <!--头像-->
+    <android.support.v7.widget.CardView
+        android:layout_width="40dp"
+        app:cardCornerRadius="20dp"
+        app:cardBackgroundColor="#aaffdd"
+        app:cardElevation="5dp"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:id="@+id/iv_icon"
+            android:layout_width="40dp"
+            android:background="@mipmap/icon_tcp"
+            android:layout_height="40dp"/>
+    </android.support.v7.widget.CardView>
+    <!--聊天内容-->
+    <android.support.v7.widget.AppCompatTextView
+        android:id="@+id/atv_chat_content"
+        android:layout_width="wrap_content"
+        android:text="聊天信息"
+        android:padding="10dp"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>
