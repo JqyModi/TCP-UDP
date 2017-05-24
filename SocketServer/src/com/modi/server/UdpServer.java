@@ -94,6 +94,7 @@ public class UdpServer {
 						port = datagramPacket.getPort();
 						ports.add(datagramPacket.getPort());
 						
+						System.err.println("客户端address:"+datagramPacket.getAddress().getHostAddress());
 						System.err.println("客户端port:"+datagramPacket.getPort());
 						
 						
@@ -107,20 +108,20 @@ public class UdpServer {
 								}
 							}
 						}
+						msg = new String(datagramPacket.getData(),0,datagramPacket.getLength());
+						System.out.println("我是服务端,客户端发来消息："+msg);
+						JsonObject jobj = new JsonObject();
+						jobj.addProperty("hostName", HOSTNAME);
+						jobj.addProperty("msg", msg);
+						jobj.addProperty("count", ports.size());
+						
+						String jsonStr = jobj.toString();
+						System.out.println("jsonStr"+jsonStr);
+						System.out.println(jsonStr);
 						//得到一条条不同数据报文
 						for (int i = 0; i < ports.size(); i++) {
-							msg = new String(datagramPacket.getData(),0,datagramPacket.getLength());
-							System.out.println("我是服务端,客户端发来消息："+msg);
-							JsonObject jobj = new JsonObject();
-							jobj.addProperty("hostName", HOSTNAME);
-							jobj.addProperty("msg", msg);
-							jobj.addProperty("count", ports.size());
-							
-							String jsonStr = jobj.toString();
-							System.out.println("jsonStr"+jsonStr);
-							System.out.println(jsonStr);
 							datagramPacket.setData(jsonStr.getBytes());
-							datagramPacket.setAddress(InetAddress.getByName(HOSTNAME));
+							datagramPacket.setAddress(address);
 							datagramPacket.setPort(ports.get(i));
 							datagramSocket.send(datagramPacket);
 						}

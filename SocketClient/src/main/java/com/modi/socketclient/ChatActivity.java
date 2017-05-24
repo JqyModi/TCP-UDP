@@ -13,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.modi.socketclient.udputils.Receiver;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Administrator on 2017/5/19.
@@ -117,6 +120,7 @@ public class ChatActivity extends Activity{
 
 		}
 	};
+	private Receiver recv;
 
 	private void sendUdpMsg(final String content) {
 		new Thread(new Runnable() {
@@ -203,23 +207,25 @@ public class ChatActivity extends Activity{
 			}
 		}else {
 			//走UDP业务逻辑
+			// 方式一：使用传统方式实现
 			if (datagramSocket==null){
-				new Thread(new Runnable() {
+				ExecutorService sExecutor = Executors.newSingleThreadExecutor();
+				sExecutor.submit(new Runnable() {
 					@Override
 					public void run() {
 						try {
 							//createClient();
 							//创建udp客户端
+							// datagramSocket = new DatagramSocket();
 							datagramSocket = new DatagramSocket();
-
-							//多播段初始化
-							BroadcastClass = new MulticastSocket(BroadcastRecvPort);
-							//确定多报播地址
-							BroadcastClass.joinGroup(InetAddress.getByName(BroadcastGroup));
-
-							Log.e("createClient","udp客户端启动成功");
+							// datagramSocket.setReuseAddress(true);
+							// String hostAddress = datagramSocket.getInetAddress().getHostAddress();
+							int port = datagramSocket.getPort();
+							// datagramSocket.bind(new InetSocketAddress(PORT));
+							Log.e("createClient","udp客户端启动成功主机名:端口号为："+port);
 							//循环接收消息
-							receiveUdpMsg(datagramSocket);
+							// receiveUdpMsg(datagramSocket);
+							receiveUdpMsg();
 							//通过handler发送客户端创建成功消息
 							Message message = new Message();
 							message.what = 3;
@@ -229,7 +235,7 @@ public class ChatActivity extends Activity{
 							e.printStackTrace();
 						}
 					}
-				}).start();
+				});
 			}else {
 				//通过handler发送客户端创建成功消息
 				Message message = new Message();
@@ -237,6 +243,22 @@ public class ChatActivity extends Activity{
 				message.obj = content;
 				handler.sendMessage(message);
 			}
+
+			//方式二：使用组播/多播实现
+			//创建一个新的接收线程并运行
+			/*recv = new Receiver(datas);
+			recv.start();
+			//使用多播完成UDP的聊天室的创建
+			ExecutorService sExecutor = Executors.newSingleThreadExecutor();
+			sExecutor.submit(new Runnable() {
+				@Override
+				public void run() {
+					recv.SendMessage(content);
+				}
+			});
+			//获取到最新数据刷新界面
+			datas = recv.getDatas();
+			lvAdapter.notifyDataSetChanged();*/
 		}
 	}
 
@@ -314,7 +336,7 @@ public class ChatActivity extends Activity{
 		}).start();
 	}
 
-	private void receiveUdpMsg(final DatagramSocket datagramSocket) {
+	private void receiveUdpMsg() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -352,7 +374,24 @@ public class ChatActivity extends Activity{
 					} catch (JSONException e) {
 						e.printStackTrace();
 					}*/
-					GetData();
+					msg = GetData();
+					try {
+						if (!msg.equals("")){
+							JSONObject jobj = new JSONObject(msg);
+							HashMap<String, Object> map = new HashMap<>();
+		 					map.put("hostName",jobj.get("hostName"));
+							map.put("icon",R.mipmap.icon_tcp);
+							map.put("msg",jobj.get("msg"));
+							// map.put("count",jobj.get("count"));
+							datas.add(map);
+							if (datas.size()>0){
+								Log.e("我是客户端,收到服务端消息：","并将消息添加到服务端成功");
+								handler.sendEmptyMessage(2);
+							}
+						}
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}).start();
@@ -365,7 +404,7 @@ public class ChatActivity extends Activity{
 		{
 			//接收数据并送与接收缓冲区
 			DataRecvPacket = new DatagramPacket(RecvBuf,1024);
-			BroadcastClass.receive(DataRecvPacket);
+			datagramSocket.receive(DataRecvPacket);
 			//取得数据并返回数据
 			Message = new String(DataRecvPacket.getData(),0,DataRecvPacket.getLength());
 			Message = Message + " from " + DataRecvPacket.getAddress().getHostName();
